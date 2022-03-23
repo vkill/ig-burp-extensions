@@ -12,7 +12,10 @@ class BurpExtender
     @callbacks = callbacks
     @helpers = callbacks.getHelpers
 
-    callbacks.setExtensionName("IG - Profile - About this account")
+    # 在 load 时调用一次
+    pp [:registerExtenderCallbacks]
+
+    callbacks.setExtensionName("IG")
     callbacks.registerHttpListener(self)
   end
 
@@ -24,16 +27,15 @@ class BurpExtender
     # 
     req = @helpers.analyzeRequest(messageInfo)
 
-    if req.getMethod() == 'POST' && req.getUrl().to_s.end_with?('/api/v1/bloks/apps/com.instagram.interactions.about_this_account/')
+    if req.getMethod() == 'POST' && req.getUrl().path == '/api/v1/bloks/apps/com.instagram.interactions.about_this_account/'
       res_bytes = messageInfo.getResponse()
       res = @helpers.analyzeResponse(res_bytes)
 
       if res.getStatusCode() == 200
-        res_body_offset = res.getBodyOffset()
-        res_body_bytes = res_bytes[res_body_offset,res_bytes.count]
+        res_body_bytes = res_bytes[res.getBodyOffset(),res_bytes.count]
 
         res = Net::HTTP.post URI('https://httpbin.org/post'), res_body_bytes.to_s, "Content-Type" => "application/json"
-        pp [:xx, res]
+        pp [:processHttpMessage, res]
       end
     end
 
